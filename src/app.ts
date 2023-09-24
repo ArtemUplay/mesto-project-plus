@@ -20,6 +20,9 @@ app.use((req, res, next) => {
 });
 app.use('/', userRouter);
 app.use('/', cardRouter);
+app.use('*', (req, res) => {
+  res.status(404).send('Страница не найдена');
+});
 
 app.listen(PORT, () => {
   // Если всё работает, консоль покажет, какой порт приложение слушает

@@ -1,10 +1,11 @@
 import { Request, Response } from 'express';
+import { ERROR_400, ERROR_404, ERROR_500 } from '../constants/constants';
 import Card from '../models/cards';
 
 export const getCards = (req: Request, res: Response) => {
   Card.find({})
-    .then((cards) => res.status(200).send(cards))
-    .catch((err) => res.status(500).send({ message: err.message }));
+    .then((cards) => res.send(cards))
+    .catch(() => res.status(ERROR_500).send({ message: 'Произошла ошибка' }));
 };
 
 export const createCard = (req: Request, res: Response) => {
@@ -16,64 +17,80 @@ export const createCard = (req: Request, res: Response) => {
       if (card) {
         res.send(card);
       } else {
-        res.status(404).send({ message: 'User not found' });
+        res.status(ERROR_404).send({ message: 'Пользователь не найден' });
       }
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res.status(400).send({ message: err.message });
+        res.status(ERROR_400).send({ message: 'Введены некорректные данные' });
       } else {
-        res.status(500).send({ message: err.message });
+        res.status(ERROR_500).send({ message: 'Произошла ошибка' });
       }
     });
 };
 
 export const deleteCard = (req: Request, res: Response) => {
-  const { id } = req.body;
+  const { cardId } = req.params;
 
-  Card.deleteOne(id)
+  Card.findByIdAndDelete(cardId)
     .then((card) => {
       if (card) {
-        res.status(200).send(card);
+        res.send(card);
       } else {
-        res.status(404).send({ message: 'Карточка не найдена' });
+        res.status(ERROR_404).send({ message: 'Карточка не найдена' });
       }
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res.status(400).send({ message: err.message });
+        res.status(ERROR_400).send({ message: 'Введены некорректные данные' });
+      } else if (err.name === 'CastError') {
+        res.status(ERROR_400).send({ message: 'Некорректный идентификатор' });
       } else {
-        res.status(500).send({ message: err.message });
+        res.status(ERROR_500).send({ message: 'Произошла ошибка' });
       }
     });
 };
 
 export const addCardLike = (req: Request, res: Response) => {
-  Card.findByIdAndUpdate(req.params.cardId, { $addToSet: { likes: req.user._id } }, { new: true })
+  Card.findByIdAndUpdate(
+    req.params.cardId,
+    { $addToSet: { likes: req.user._id } },
+    { new: true, runValidators: true }
+  )
     .then((card) => {
       if (card) {
-        res.status(200).send(card);
+        res.send(card);
       } else {
-        res.status(404).send({ message: 'Карточка не найдена' });
+        res.status(ERROR_404).send({ message: 'Карточка не найдена' });
       }
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res.status(400).send({ message: err.message });
+        res.status(ERROR_400).send({ message: 'Введены некорректные данные' });
+      } else if (err.name === 'CastError') {
+        res.status(ERROR_400).send({ message: 'Некорректный идентификатор' });
       } else {
-        res.status(500).send({ message: err.message });
+        res.status(ERROR_500).send({ message: 'Произошла ошибка' });
       }
     });
 };
 
 export const deleteCardLike = (req: Request, res: Response) => {
-  Card.findByIdAndUpdate(req.params.cardId, { $pull: { likes: req.user._id } }, { new: true })
+  Card.findByIdAndDelete(req.params.cardId, { $pull: { likes: req.user._id } })
     .then((card) => {
       if (card) {
-        res.status(200).send(card);
+        res.send(card);
       } else {
-        res.status(404).send({ message: 'Карточка не найдена' });
+        res.status(ERROR_404).send({ message: 'Карточка не найдена' });
       }
     })
-    .catch((err) => res.status(500).send({ message: err.message }));
+    .catch((err) => {
+      if (err.name === 'ValidationError') {
+        res.status(ERROR_400).send({ message: 'Введены некорректные данные' });
+      } else if (err.name === 'CastError') {
+        res.status(ERROR_400).send({ message: 'Некорректный идентификатор' });
+      } else {
+        res.status(ERROR_500).send({ message: 'Произошла ошибка' });
+      }
+    });
 };
