@@ -16,8 +16,6 @@ export const getUser = (req: Request, res: Response) => {
       } else {
         res.status(ERROR_404).send({ message: 'Пользователь не найден' });
       }
-
-      return res.send(user);
     })
     .catch((err) => {
       if (err.name === 'CastError') {

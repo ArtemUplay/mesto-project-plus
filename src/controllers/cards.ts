@@ -76,7 +76,7 @@ export const addCardLike = (req: Request, res: Response) => {
 };
 
 export const deleteCardLike = (req: Request, res: Response) => {
-  Card.findByIdAndDelete(req.params.cardId, { $pull: { likes: req.user._id } })
+  Card.findByIdAndUpdate(req.params.cardId, { $pull: { likes: req.user._id } })
     .then((card) => {
       if (card) {
         res.send(card);
