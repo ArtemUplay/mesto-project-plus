@@ -1,96 +1,87 @@
-import { Request, Response } from 'express';
-import { ERROR_400, ERROR_404, ERROR_500 } from '../constants/constants';
+import { NextFunction, Request, Response } from 'express';
+import NotFoundError from '../errors/not-found-err';
 import Card from '../models/cards';
+import ForbiddenError from '../errors/forbidden-err';
+import BadRequestError from '../errors/bad-request-err';
 
-export const getCards = (req: Request, res: Response) => {
+export const getCards = (req: Request, res: Response, next: NextFunction) => {
   Card.find({})
-    .then((cards) => res.send(cards))
-    .catch(() => res.status(ERROR_500).send({ message: 'Произошла ошибка' }));
+    .then((cards) => {
+      if (!cards) {
+        throw new NotFoundError('Карточки не найдены');
+      }
+
+      res.send(cards);
+    })
+    .catch(next);
 };
 
-export const createCard = (req: Request, res: Response) => {
+export const createCard = (req: Request, res: Response, next: NextFunction) => {
   const { name, link } = req.body;
   const owner = req.user._id;
 
   Card.create({ name, link, owner })
     .then((card) => {
-      if (card) {
-        res.send(card);
-      } else {
-        res.status(ERROR_404).send({ message: 'Пользователь не найден' });
+      if (!card) {
+        throw new NotFoundError('Карточка не найдена');
       }
+
+      res.send(card);
     })
-    .catch((err) => {
-      if (err.name === 'ValidationError') {
-        res.status(ERROR_400).send({ message: 'Введены некорректные данные' });
-      } else {
-        res.status(ERROR_500).send({ message: 'Произошла ошибка' });
-      }
-    });
+    .catch(next);
 };
 
-export const deleteCard = (req: Request, res: Response) => {
+export const deleteCard = (req: Request, res: Response, next: NextFunction) => {
   const { cardId } = req.params;
+  const userId = req.user._id;
 
-  Card.findByIdAndDelete(cardId)
+  Card.findById(cardId)
     .then((card) => {
-      if (card) {
-        res.send(card);
-      } else {
-        res.status(ERROR_404).send({ message: 'Карточка не найдена' });
+      if (card && card.owner.toString() !== userId) {
+        throw new ForbiddenError('Недостаточно прав для выполнения операции');
+      } else if (!card) {
+        throw new NotFoundError('Карточка не найдена');
       }
+
+      Card.findByIdAndDelete(cardId);
     })
-    .catch((err) => {
-      if (err.name === 'ValidationError') {
-        res.status(ERROR_400).send({ message: 'Введены некорректные данные' });
-      } else if (err.name === 'CastError') {
-        res.status(ERROR_400).send({ message: 'Некорректный идентификатор' });
-      } else {
-        res.status(ERROR_500).send({ message: 'Произошла ошибка' });
-      }
-    });
+    .then((card) => {
+      res.send(card);
+    })
+    .catch(next);
 };
 
-export const addCardLike = (req: Request, res: Response) => {
+export const addCardLike = (req: Request, res: Response, next: NextFunction) => {
   Card.findByIdAndUpdate(
     req.params.cardId,
     { $addToSet: { likes: req.user._id } },
     { new: true, runValidators: true }
   )
     .then((card) => {
-      if (card) {
-        res.send(card);
-      } else {
-        res.status(ERROR_404).send({ message: 'Карточка не найдена' });
+      if (!card) {
+        throw new NotFoundError('Карточка не найдена');
       }
+
+      res.send(card);
     })
-    .catch((err) => {
-      if (err.name === 'ValidationError') {
-        res.status(ERROR_400).send({ message: 'Введены некорректные данные' });
-      } else if (err.name === 'CastError') {
-        res.status(ERROR_400).send({ message: 'Некорректный идентификатор' });
-      } else {
-        res.status(ERROR_500).send({ message: 'Произошла ошибка' });
-      }
-    });
+    .catch(next);
 };
 
-export const deleteCardLike = (req: Request, res: Response) => {
+export const deleteCardLike = (req: Request, res: Response, next: NextFunction) => {
   Card.findByIdAndUpdate(req.params.cardId, { $pull: { likes: req.user._id } })
     .then((card) => {
-      if (card) {
-        res.send(card);
-      } else {
-        res.status(ERROR_404).send({ message: 'Карточка не найдена' });
+      if (!card) {
+        throw new NotFoundError('Карточка не найдена');
       }
+
+      res.send(card);
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res.status(ERROR_400).send({ message: 'Введены некорректные данные' });
+        throw new BadRequestError('Введены некорректные данные');
       } else if (err.name === 'CastError') {
-        res.status(ERROR_400).send({ message: 'Некорректный идентификатор' });
-      } else {
-        res.status(ERROR_500).send({ message: 'Произошла ошибка' });
+        throw new BadRequestError('Некорректный идентификатор');
       }
-    });
+    })
+    .catch(next);
 };

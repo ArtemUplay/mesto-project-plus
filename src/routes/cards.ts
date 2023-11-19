@@ -10,13 +10,9 @@ import {
 const router = Router();
 
 router.get('/cards', getCards);
-
 router.post('/cards', createCard);
-
 router.delete('/cards/:cardId', deleteCard);
-
 router.put('/cards/:cardId/likes', addCardLike);
-
 router.delete('/cards/:cardId/likes', deleteCardLike);
 
 export default router;
