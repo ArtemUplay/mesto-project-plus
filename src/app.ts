@@ -1,7 +1,7 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import cookieParser from 'cookie-parser';
-import cors from 'cors';
+import { Joi, celebrate, errors } from 'celebrate';
 import { createUser, login } from './controllers/users';
 import userRouter from './routes/users';
 import cardRouter from './routes/cards';
@@ -16,18 +16,41 @@ mongoose.connect('mongodb://127.0.0.1:27017/mestodb');
 
 const app = express();
 
-app.use(cors());
-
 app.use(express.json());
 app.use(cookieParser());
-app.post('/signin', login);
-app.post('/signup', createUser);
+app.post(
+  '/signin',
+  celebrate({
+    body: Joi.object().keys({
+      email: Joi.string().email().required(),
+      password: Joi.string().required(),
+    }),
+  }),
+  login
+);
+app.post(
+  '/signup',
+  celebrate({
+    body: Joi.object().keys({
+      name: Joi.string().min(2).max(30).default('Жак-Ив Кусто'),
+      about: Joi.string().min(2).max(200).default('Исследователь'),
+      avatar: Joi.string()
+        .uri()
+        .default('https://pictures.s3.yandex.net/resources/jacques-cousteau_1604399756.png'),
+      email: Joi.string().email().required(),
+      password: Joi.string().required(),
+    }),
+  }),
+  createUser
+);
+
 app.use(auth);
 app.use('/', userRouter);
 app.use('/', cardRouter);
 app.use('*', () => {
   throw new NotFoundError('Страница не найдена');
 });
+app.use(errors());
 app.use(error);
 
 app.listen(PORT, () => {
