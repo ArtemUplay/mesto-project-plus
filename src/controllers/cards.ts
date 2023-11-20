@@ -37,13 +37,13 @@ export const deleteCard = (req: Request, res: Response, next: NextFunction) => {
 
   Card.findById(cardId)
     .then((card) => {
-      if (card && card.owner.toString() !== userId) {
-        throw new ForbiddenError('Недостаточно прав для выполнения операции');
-      } else if (!card) {
+      if (!card) {
         throw new NotFoundError('Карточка не найдена');
+      } else if (card.owner.toString() !== userId) {
+        throw new ForbiddenError('Недостаточно прав для выполнения операции');
       }
 
-      Card.findByIdAndDelete(cardId);
+      return Card.findByIdAndDelete(cardId);
     })
     .then((card) => {
       res.send(card);
@@ -68,7 +68,7 @@ export const addCardLike = (req: Request, res: Response, next: NextFunction) => 
 };
 
 export const deleteCardLike = (req: Request, res: Response, next: NextFunction) => {
-  Card.findByIdAndUpdate(req.params.cardId, { $pull: { likes: req.user._id } })
+  Card.findByIdAndUpdate(req.params.cardId, { $pull: { likes: req.user._id } }, { new: true })
     .then((card) => {
       if (!card) {
         throw new NotFoundError('Карточка не найдена');
@@ -81,6 +81,8 @@ export const deleteCardLike = (req: Request, res: Response, next: NextFunction) 
         throw new BadRequestError('Введены некорректные данные');
       } else if (err.name === 'CastError') {
         throw new BadRequestError('Некорректный идентификатор');
+      } else {
+        next(err);
       }
     })
     .catch(next);

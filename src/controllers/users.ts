@@ -32,6 +32,8 @@ export const getUser = (req: Request, res: Response, next: NextFunction) => {
     .catch((error) => {
       if (error.name === 'CastError') {
         throw new BadRequestError('Некорректный идентификатор');
+      } else {
+        next(error);
       }
     })
     .catch(next);
@@ -47,13 +49,15 @@ export const createUser = (req: Request, res: Response, next: NextFunction) => {
           throw new NotFoundError('Пользователь не найден');
         }
 
-        res.status(201).send(user);
+        res.status(201).send({ name, about, avatar, email });
       })
       .catch((error) => {
         if (error.name === 'ValidationError') {
           throw new BadRequestError('Введены некорректные данные');
         } else if (error.code === 11000) {
           throw new ExistingEmailError('Email уже существует');
+        } else {
+          next(error);
         }
       })
       .catch(next);
@@ -75,6 +79,8 @@ export const getCurrentUser = (req: Request, res: Response, next: NextFunction) 
     .catch((err) => {
       if (err.name === 'CastError') {
         throw new BadRequestError('Некорректный идентификатор');
+      } else {
+        next(err);
       }
     })
     .catch(next);
@@ -98,6 +104,8 @@ export const updateUser = (req: Request, res: Response, next: NextFunction) => {
         throw new BadRequestError('Введены некорректные данные');
       } else if (err.name === 'CastError') {
         throw new BadRequestError('Некорректный идентификатор');
+      } else {
+        next(err);
       }
     })
     .catch(next);
@@ -121,6 +129,8 @@ export const updateAvatar = (req: Request, res: Response, next: NextFunction) =>
         throw new BadRequestError('Введены некорректные данные');
       } else if (err.name === 'CastError') {
         throw new BadRequestError('Некорректный идентификатор');
+      } else {
+        next(err);
       }
     })
     .catch(next);

@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import UnauthorizedError from '../errors/unauthorized-err';
 
 export default (req: Request, res: Response, next: NextFunction) => {
   const token = req.cookies.jwt;
@@ -7,13 +8,13 @@ export default (req: Request, res: Response, next: NextFunction) => {
   let payload;
 
   if (!token) {
-    return res.status(401).send({ message: 'Необходима авторизация' });
+    throw new UnauthorizedError('Необходима авторизация');
   }
 
   try {
     payload = jwt.verify(token, 'super-strong-secret') as { _id: string };
   } catch (err) {
-    return res.status(401).send({ message: 'Необходима авторизация' });
+    return next(err);
   }
 
   req.user = payload;
