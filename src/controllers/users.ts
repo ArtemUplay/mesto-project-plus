@@ -21,7 +21,6 @@ export const getUsers = (req: Request, res: Response, next: NextFunction) => {
 
 export const getUser = (req: Request, res: Response, next: NextFunction) => {
   User.findById(req.params.userId)
-    .select('+password')
     .then((user) => {
       if (!user) {
         throw new NotFoundError('Пользователь не найден');
@@ -30,13 +29,12 @@ export const getUser = (req: Request, res: Response, next: NextFunction) => {
       res.send(user);
     })
     .catch((error) => {
-      if (error.name === 'CastError') {
-        throw new BadRequestError('Некорректный идентификатор');
-      } else {
-        next(error);
+      if (error.name === 'ValidationError' || error.name === 'CastError') {
+        next(new BadRequestError(error.message));
       }
-    })
-    .catch(next);
+
+      next(error.message);
+    });
 };
 
 export const createUser = (req: Request, res: Response, next: NextFunction) => {
@@ -53,14 +51,13 @@ export const createUser = (req: Request, res: Response, next: NextFunction) => {
       })
       .catch((error) => {
         if (error.name === 'ValidationError') {
-          throw new BadRequestError('Введены некорректные данные');
+          next(new BadRequestError(error.message));
         } else if (error.code === 11000) {
           throw new ExistingEmailError('Email уже существует');
         } else {
-          next(error);
+          next(error.message);
         }
-      })
-      .catch(next);
+      });
   });
 };
 
@@ -68,7 +65,6 @@ export const getCurrentUser = (req: Request, res: Response, next: NextFunction) 
   const id = req.user._id;
 
   User.findById(id)
-    .select('+password')
     .then((user) => {
       if (!user) {
         throw new NotFoundError('Пользователь не найден');
@@ -78,12 +74,11 @@ export const getCurrentUser = (req: Request, res: Response, next: NextFunction) 
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        throw new BadRequestError('Некорректный идентификатор');
+        next(new BadRequestError(err.message));
       } else {
-        next(err);
+        next(err.message);
       }
-    })
-    .catch(next);
+    });
 };
 
 export const updateUser = (req: Request, res: Response, next: NextFunction) => {
@@ -91,7 +86,6 @@ export const updateUser = (req: Request, res: Response, next: NextFunction) => {
   const { name, about } = req.body;
 
   User.findByIdAndUpdate(_id, { name, about }, { new: true, runValidators: true })
-    .select('+password')
     .then((user) => {
       if (!user) {
         throw new NotFoundError('Пользователь не найден');
@@ -100,15 +94,12 @@ export const updateUser = (req: Request, res: Response, next: NextFunction) => {
       res.send(user);
     })
     .catch((err) => {
-      if (err.name === 'ValidationError') {
-        throw new BadRequestError('Введены некорректные данные');
-      } else if (err.name === 'CastError') {
-        throw new BadRequestError('Некорректный идентификатор');
+      if (err.name === 'ValidationError' || err.name === 'CastError') {
+        next(new BadRequestError(err.message));
       } else {
-        next(err);
+        next(err.message);
       }
-    })
-    .catch(next);
+    });
 };
 
 export const updateAvatar = (req: Request, res: Response, next: NextFunction) => {
@@ -116,7 +107,6 @@ export const updateAvatar = (req: Request, res: Response, next: NextFunction) =>
   const { avatar } = req.body;
 
   User.findByIdAndUpdate(_id, { avatar }, { new: true, runValidators: true })
-    .select('+password')
     .then((user) => {
       if (!user) {
         throw new NotFoundError('Пользователь не найден');
@@ -125,15 +115,12 @@ export const updateAvatar = (req: Request, res: Response, next: NextFunction) =>
       res.send(user);
     })
     .catch((err) => {
-      if (err.name === 'ValidationError') {
-        throw new BadRequestError('Введены некорректные данные');
-      } else if (err.name === 'CastError') {
-        throw new BadRequestError('Некорректный идентификатор');
+      if (err.name === 'ValidationError' || err.name === 'CastError') {
+        next(new BadRequestError(err.message));
       } else {
-        next(err);
+        next(err.message);
       }
-    })
-    .catch(next);
+    });
 };
 
 export const login = (req: Request, res: Response, next: NextFunction) => {
@@ -154,11 +141,6 @@ export const login = (req: Request, res: Response, next: NextFunction) => {
       res.send({ message: 'Успешный вход' });
     })
     .catch((err) => {
-      if (err.code === 11000) {
-        throw new ExistingEmailError('Email уже существует');
-      }
-
-      throw new UnauthorizedError('Ошибка входа');
-    })
-    .catch(next);
+      next(new UnauthorizedError(err.message));
+    });
 };

@@ -28,7 +28,13 @@ export const createCard = (req: Request, res: Response, next: NextFunction) => {
 
       res.send(card);
     })
-    .catch(next);
+    .catch((err) => {
+      if (err.name === 'ValidationError' || err.name === 'CastError') {
+        next(new BadRequestError(err.message));
+      } else {
+        next(err.message);
+      }
+    });
 };
 
 export const deleteCard = (req: Request, res: Response, next: NextFunction) => {
@@ -77,13 +83,10 @@ export const deleteCardLike = (req: Request, res: Response, next: NextFunction) 
       res.send(card);
     })
     .catch((err) => {
-      if (err.name === 'ValidationError') {
-        throw new BadRequestError('Введены некорректные данные');
-      } else if (err.name === 'CastError') {
-        throw new BadRequestError('Некорректный идентификатор');
+      if (err.name === 'ValidationError' || err.name === 'CastError') {
+        next(new BadRequestError(err.message));
       } else {
-        next(err);
+        next(err.message);
       }
-    })
-    .catch(next);
+    });
 };
