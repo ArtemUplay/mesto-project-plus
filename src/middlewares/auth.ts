@@ -14,7 +14,7 @@ export default (req: Request, res: Response, next: NextFunction) => {
   try {
     payload = jwt.verify(token, 'super-strong-secret') as { _id: string };
   } catch (err) {
-    return next(err);
+    return next(new UnauthorizedError('Необходима авторизация'));
   }
 
   req.user = payload;

@@ -53,7 +53,7 @@ export const createUser = (req: Request, res: Response, next: NextFunction) => {
         if (error.name === 'ValidationError') {
           next(new BadRequestError(error.message));
         } else if (error.code === 11000) {
-          throw new ExistingEmailError('Email уже существует');
+          next(new ExistingEmailError(error.message));
         } else {
           next(error.message);
         }
